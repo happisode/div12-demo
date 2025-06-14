@@ -1,0 +1,78 @@
+<div>
+  <h3>출판 비용 셀프 계산기</h3>
+
+  <label>총 페이지 수:
+    <input type="number" id="totalPages" value="0" min="0" oninput="calculate()">
+  </label><br><br>
+
+  <label>포함되는 컬러 페이지 수:
+    <input type="number" id="colorPages" value="0" min="0" oninput="calculate()">
+  </label><br><br>
+
+  <label>패키지 선택:
+    <select id="package" onchange="calculate()">
+      <option value="bw_basic">[흑백1도] 베스트셀러 베이직 (150만 / 기준 150쪽)</option>
+      <option value="bw_premium">[흑백1도] 베스트셀러 프리미엄 (180만 / 기준 200쪽)</option>
+      <option value="bw_wow">[흑백1도] 베스트셀러 WOW (200만 / 기준 200쪽)</option>
+      <option value="edu_bw">[교재출판] 흑백1도 (268만 / 기준 200쪽)</option>
+    </select>
+  </label><br><br>
+
+  <p>기준 페이지 수: <span id="bwBase">-</span></p>
+
+  <label>표지 에폭시:
+    <select id="epoxyOption" onchange="calculate()">
+      <option value="no" selected>아니오</option>
+      <option value="yes">예</option>
+    </select>
+  </label><br><br>
+
+  <div style="border:1px solid #ccc; padding:10px; margin-top:15px; background:#f9f9f9;">
+    <p id="result"><strong>총 예상 비용:</strong> -</p>
+    <p id="breakdown" style="margin-top:5px;"></p>
+  </div>
+</div>
+
+<script>
+const allPackages = {
+  "bw_basic": { name: "[흑백1도] 베스트셀러 베이직", basePrice: 1500000, basePages: 150, bwRate: 5000, colorRate: 10000 },
+  "bw_premium": { name: "[흑백1도] 베스트셀러 프리미엄", basePrice: 1800000, basePages: 200, bwRate: 5000, colorRate: 10000 },
+  "bw_wow": { name: "[흑백1도] 베스트셀러 WOW", basePrice: 2000000, basePages: 200, bwRate: 5000, colorRate: 10000 },
+  "edu_bw": { name: "[교재출판] 흑백1도", basePrice: 2680000, basePages: 200, bwRate: 7000, colorRate: 10000 }
+};
+
+function calculate() {
+  const selected = document.getElementById("package").value;
+  const totalPages = parseInt(document.getElementById("totalPages").value) || 0;
+  const colorPages = parseInt(document.getElementById("colorPages").value) || 0;
+  const epoxy = document.getElementById("epoxyOption").value;
+
+  if (!selected) return;
+
+  const pkg = allPackages[selected];
+  const basePrice = pkg.basePrice;
+  const baseBWIncluded = pkg.basePages;
+  const bwRate = pkg.bwRate;
+  const colorRate = pkg.colorRate;
+
+  const extraPages = Math.max(0, totalPages - baseBWIncluded);
+  const bwExtraCost = extraPages * bwRate;
+  const colorExtraCost = colorPages * colorRate;
+  const epoxyCost = (epoxy === "yes") ? 500000 : 0;
+  const total = basePrice + bwExtraCost + colorExtraCost + epoxyCost;
+
+  document.getElementById("bwBase").innerText = `${baseBWIncluded}쪽`;
+  document.getElementById("result").innerHTML = `<strong>총 예상 비용:</strong> ${total.toLocaleString()}원`;
+
+  let breakdownText = `기본 출판비: ${basePrice.toLocaleString()}원<br>`;
+  if (extraPages > 0)
+    breakdownText += `추가 흑백 ${extraPages}쪽 × ${bwRate.toLocaleString()}원 = ${bwExtraCost.toLocaleString()}원<br>`;
+  if (colorPages > 0)
+    breakdownText += `컬러 포함 ${colorPages}쪽 × ${colorRate.toLocaleString()}원 = ${colorExtraCost.toLocaleString()}원<br>`;
+  if (epoxy === "yes")
+    breakdownText += `표지 에폭시: 500,000원<br>`;
+  breakdownText += `<strong>총합: ${total.toLocaleString()}원</strong>`;
+
+  document.getElementById("breakdown").innerHTML = breakdownText;
+}
+</script>
