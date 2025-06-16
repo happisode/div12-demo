@@ -1,4 +1,9 @@
+
+<!DOCTYPE html>
+<html lang="ko">
 <head>
+  <meta charset="UTF-8">
+  <title>출판 비용 계산기 (비밀번호 보호)</title>
   <style>
     body { display: none; }
   </style>
@@ -9,12 +14,12 @@
         document.body.style.display = "block";
       });
     } else {
-      document.write("<h3 style='text-align:center; margin-top:50px;'>접근이 제한된 페이지입니다.</h3>");
+      alert("비밀번호가 틀렸습니다."); document.write("<h3 style='text-align:center; margin-top:50px;'>접근이 제한된 페이지입니다.</h3>");
       throw new Error("Unauthorized access");
     }
   </script>
 </head>
-
+<body>
 <div>
   <h3>출판 비용 셀프 계산기</h3>
 
@@ -106,3 +111,5 @@ function calculate() {
   document.getElementById("breakdown").innerHTML = breakdownText;
 }
 </script>
+</body>
+</html>
