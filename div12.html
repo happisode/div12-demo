@@ -1,4 +1,10 @@
-
+<script>
+  const password = prompt("비밀번호를 입력하세요:");
+  if (password !== "1234") {
+    document.body.innerHTML = "<h3 style='text-align:center; margin-top:50px;'>접근이 제한된 페이지입니다.</h3>";
+    throw new Error("Unauthorized access");
+  }
+</script>
 <div>
   <h3>출판 비용 셀프 계산기</h3>
 
