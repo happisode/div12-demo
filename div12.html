@@ -1,5 +1,22 @@
+
 <div>
   <h3>출판 비용 셀프 계산기</h3>
+
+  <h4>원고 유형</h4>
+  <label><input type="radio" name="manuscriptType" value="text_only" onclick="selectPackage('bw_premium')"> 텍스트만 있는 원고</label><br>
+  <label><input type="radio" name="manuscriptType" value="with_images" onclick="selectPackage('bw_wow')"> 사진, 도표가 있는 원고</label><br>
+  <label><input type="radio" name="manuscriptType" value="poetry" onclick="selectPackage('bw_basic')"> 시집</label><br>
+  <label><input type="radio" name="manuscriptType" value="edu" onclick="selectPackage('edu_bw')"> 교재 출판 (46배판 이상)</label><br><br>
+
+  <label>기준 패키지:
+    <select id="package" onchange="calculate()">
+      <option value="">-- 패키지를 선택하세요 --</option>
+      <option value="bw_premium">베스트셀러 프리미엄</option>
+      <option value="bw_wow">베스트셀러 WOW</option>
+      <option value="bw_basic">베스트셀러 베이직</option>
+      <option value="edu_bw">교재 출판 (46배판 이상)</option>
+    </select>
+  </label><br><br>
 
   <label>총 페이지 수:
     <input type="number" id="totalPages" value="0" min="0" oninput="calculate()">
@@ -7,15 +24,6 @@
 
   <label>포함되는 컬러 페이지 수:
     <input type="number" id="colorPages" value="0" min="0" oninput="calculate()">
-  </label><br><br>
-
-  <label>패키지 선택:
-    <select id="package" onchange="calculate()">
-      <option value="bw_basic">[흑백1도] 베스트셀러 베이직 (150만 / 기준 150쪽)</option>
-      <option value="bw_premium">[흑백1도] 베스트셀러 프리미엄 (180만 / 기준 200쪽)</option>
-      <option value="bw_wow">[흑백1도] 베스트셀러 WOW (200만 / 기준 200쪽)</option>
-      <option value="edu_bw">[교재출판] 흑백1도 (268만 / 기준 200쪽)</option>
-    </select>
   </label><br><br>
 
   <p>기준 페이지 수: <span id="bwBase">-</span></p>
@@ -35,11 +43,17 @@
 
 <script>
 const allPackages = {
-  "bw_basic": { name: "[흑백1도] 베스트셀러 베이직", basePrice: 1500000, basePages: 150, bwRate: 5000, colorRate: 10000 },
-  "bw_premium": { name: "[흑백1도] 베스트셀러 프리미엄", basePrice: 1800000, basePages: 200, bwRate: 5000, colorRate: 10000 },
-  "bw_wow": { name: "[흑백1도] 베스트셀러 WOW", basePrice: 2000000, basePages: 200, bwRate: 5000, colorRate: 10000 },
-  "edu_bw": { name: "[교재출판] 흑백1도", basePrice: 2680000, basePages: 200, bwRate: 7000, colorRate: 10000 }
+  "bw_basic": { name: "베스트셀러 베이직", basePrice: 1500000, basePages: 150, bwRate: 5000, colorRate: 10000 },
+  "bw_premium": { name: "베스트셀러 프리미엄", basePrice: 1800000, basePages: 200, bwRate: 5000, colorRate: 10000 },
+  "bw_wow": { name: "베스트셀러 WOW", basePrice: 2000000, basePages: 200, bwRate: 5000, colorRate: 10000 },
+  "edu_bw": { name: "교재 출판 (46배판 이상)", basePrice: 2680000, basePages: 200, bwRate: 7000, colorRate: 10000 }
 };
+
+function selectPackage(value) {
+  document.getElementById("package").value = value;
+  document.getElementById("package").dispatchEvent(new Event("change"));
+  calculate();
+}
 
 function calculate() {
   const selected = document.getElementById("package").value;
