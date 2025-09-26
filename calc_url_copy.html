@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+
+<style id="webmakerstyle">
+
+</style>
+</head>
+<body>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>출판 비용 계산기</title>
+</head>
+<body>
+<div>
+  <h3>출판 비용 셀프 계산기</h3>
+
+  <h4>원고 유형</h4>
+  <label><input type="radio" name="manuscriptType" value="text_only" onclick="selectPackage('bw_premium')"> 텍스트만 있는 원고</label><br>
+  <label><input type="radio" name="manuscriptType" value="with_images" onclick="selectPackage('bw_wow')"> 사진, 도표가 있는 원고</label><br>
+  <label><input type="radio" name="manuscriptType" value="poetry" onclick="selectPackage('bw_basic')"> 시집</label><br>
+  <label><input type="radio" name="manuscriptType" value="edu" onclick="selectPackage('edu_bw')"> 교재 출판 (46배판 이상)</label><br><br>
+
+  <label>기준 패키지:
+    <select id="package" onchange="calculate()">
+      <option value="">-- 패키지를 선택하세요 --</option>
+      <option value="bw_premium">베스트셀러 프리미엄</option>
+      <option value="bw_wow">베스트셀러 WOW</option>
+      <option value="bw_basic">베스트셀러 베이직</option>
+      <option value="edu_bw">교재 출판 (46배판 이상)</option>
+    </select>
+  </label><br><br>
+
+  <label>총 페이지 수:
+    <input type="number" id="totalPages" value="0" min="0" oninput="calculate()">
+  </label><br><br>
+
+  <label>포함되는 컬러 페이지 수:
+    <input type="number" id="colorPages" value="0" min="0" oninput="calculate()">
+  </label><br><br>
+
+  <p>기준 페이지 수: <span id="bwBase">-</span></p>
+
+  <label>표지 에폭시:
+    <select id="epoxyOption" onchange="calculate()">
+      <option value="no" selected>아니오</option>
+      <option value="yes">예</option>
+    </select>
+  </label><br><br>
+
+  <label>증정본 (기본 40부):
+    <input type="number" id="giftCopies" value="40" min="40" oninput="calculate()">
+  </label><br><br>
+
+  <div style="border:1px solid #ccc; padding:10px; margin-top:15px; background:#f9f9f9;">
+    <p id="result"><strong>총 예상 비용:</strong> -</p>
+    <p id="breakdown" style="margin-top:5px;"></p>
+  </div>
+  
+  <button onclick="copyCurrentUrl()">이 계산기 URL 복사</button>
+
+</div>
+
+<script>
+const allPackages = {
+  "bw_basic": { name: "베스트셀러 베이직", basePrice: 1500000, basePages: 150, bwRate: 5000, colorRate: 10000 },
+  "bw_premium": { name: "베스트셀러 프리미엄", basePrice: 1800000, basePages: 200, bwRate: 5000, colorRate: 10000 },
+  "bw_wow": { name: "베스트셀러 WOW", basePrice: 2000000, basePages: 200, bwRate: 5000, colorRate: 10000 },
+  "edu_bw": { name: "교재 출판 (46배판 이상)", basePrice: 2680000, basePages: 200, bwRate: 7000, colorRate: 10000 }
+};
+
+const GIFT_COPIES_BASE = 40;
+
+function selectPackage(value) {
+  document.getElementById("package").value = value;
+  // selectPackage가 이미 change 이벤트를 발생시키는 것으로 간주하고,
+  // 원고 유형 라디오 버튼과 패키지 드롭다운을 연동합니다.
+  document.getElementById("package").dispatchEvent(new Event("change"));
+  calculate();
+}
+
+function getManuscriptType() {
+    const radioButtons = document.getElementsByName('manuscriptType');
+    for (const radio of radioButtons) {
+        if (radio.checked) {
+            return radio.value;
+        }
+    }
+    // 라디오 버튼이 체크 안 된 경우 패키지 선택을 역으로 추적
+    const selectedPackage = document.getElementById("package").value;
+    if (selectedPackage === 'bw_basic') return 'poetry';
+    if (selectedPackage === 'bw_premium') return 'text_only';
+    if (selectedPackage === 'bw_wow') return 'with_images';
+    if (selectedPackage === 'edu_bw') return 'edu';
+    return ''; // 선택된 원고 유형 없음
+}
+
+function calculate() {
+  const selected = document.getElementById("package").value;
+  const totalPages = parseInt(document.getElementById("totalPages").value) || 0;
+  const colorPages = parseInt(document.getElementById("colorPages").value) || 0;
+  const epoxy = document.getElementById("epoxyOption").value;
+  const giftCopies = parseInt(document.getElementById("giftCopies").value) || GIFT_COPIES_BASE;
+  const manuscriptType = getManuscriptType();
+
+  if (!selected) return;
+
+  const pkg = allPackages[selected];
+  const basePrice = pkg.basePrice;
+  const baseBWIncluded = pkg.basePages;
+  const bwRate = pkg.bwRate;
+  const colorRate = pkg.colorRate;
+
+  // 페이지 관련 비용 계산
+  const extraPages = Math.max(0, totalPages - baseBWIncluded);
+  const bwExtraCost = extraPages * bwRate;
+  const colorExtraCost = colorPages * colorRate;
+  
+  // 표지 에폭시 비용 계산
+  const epoxyCost = (epoxy === "yes") ? 500000 : 0;
+  
+  // 증정본 초과 부수 비용 계산
+  const extraCopies = Math.max(0, giftCopies - GIFT_COPIES_BASE);
+  let giftRate = 0; // 초과 부수당 단가
+  
+  if (extraCopies > 0) {
+    if (manuscriptType === "poetry") {
+      // 1. 시집: 초과 1부당 4,000원
+      giftRate = 4000;
+    } else if (manuscriptType === "text_only" || manuscriptType === "with_images") {
+      // 2. 텍스트만 있는 원고 또는 사진·도표가 포함된 원고
+      // 페이지 400쪽 초과 또는 컬러 페이지 100쪽 초과 시 5,500원
+      if (totalPages > 400 || colorPages > 100) {
+        giftRate = 5500;
+      } else {
+        giftRate = 5000; // 기본 5,000원
+      }
+    } else if (manuscriptType === "edu") {
+      // 3. 교재(46배판 이상): 초과 1부당 6,000원
+      giftRate = 6000;
+    }
+  }
+
+  const giftCopiesCost = extraCopies * giftRate;
+
+  // 총 비용 계산
+  const total = basePrice + bwExtraCost + colorExtraCost + epoxyCost + giftCopiesCost;
+
+  document.getElementById("bwBase").innerText = `${baseBWIncluded}쪽`;
+  document.getElementById("result").innerHTML = `<strong>총 예상 비용:</strong> ${total.toLocaleString()}원`;
+
+  let breakdownText = `기본 출판비: ${basePrice.toLocaleString()}원<br>`;
+  if (extraPages > 0)
+    breakdownText += `추가 흑백 ${extraPages}쪽 × ${bwRate.toLocaleString()}원 = ${bwExtraCost.toLocaleString()}원<br>`;
+  if (colorPages > 0)
+    breakdownText += `컬러 포함 ${colorPages}쪽 × ${colorRate.toLocaleString()}원 = ${colorExtraCost.toLocaleString()}원<br>`;
+  if (epoxy === "yes")
+    breakdownText += `표지 에폭시: 500,000원<br>`;
+  
+  // 증정본 비용을 "단가 × 부수 = 총액" 형태로 표시
+  if (giftCopiesCost > 0)
+    breakdownText += `증정본 초과 부수 (${extraCopies}부) 비용: ${giftRate.toLocaleString()}원 × ${extraCopies}부 = ${giftCopiesCost.toLocaleString()}원<br>`;
+  
+  breakdownText += `<strong>총합: ${total.toLocaleString()}원</strong>`;
+
+  document.getElementById("breakdown").innerHTML = breakdownText;
+}
+
+// =========================================================================
+// URL 파라미터 기능 추가
+// =========================================================================
+
+/**
+ * 현재 계산 상태를 URL 쿼리 스트링으로 조합하여 반환합니다.
+ */
+function getCurrentUrlParams() {
+    const manuscriptType = getManuscriptType();
+    const packageValue = document.getElementById("package").value;
+    const totalPages = document.getElementById("totalPages").value;
+    const colorPages = document.getElementById("colorPages").value;
+    const epoxy = document.getElementById("epoxyOption").value;
+    const giftCopies = document.getElementById("giftCopies").value;
+
+    const params = new URLSearchParams();
+    
+    // 1. 원고 유형 (type) - 기본값이 아닌 경우만 추가
+    if (manuscriptType) {
+        params.append('type', manuscriptType);
+    }
+    // 2. 기준 패키지 (package)
+    if (packageValue) {
+        params.append('package', packageValue);
+    }
+    // 3. 총 페이지 수 (total_pages) - 기본값이 아닌 경우만 추가
+    if (totalPages && totalPages !== "0") {
+        params.append('total_pages', totalPages);
+    }
+    // 4. 컬러 페이지 수 (color_pages) - 기본값이 아닌 경우만 추가
+    if (colorPages && colorPages !== "0") {
+        params.append('color_pages', colorPages);
+    }
+    // 5. 표지 에폭시 (epoxy) - '아니오'가 아닌 경우만 추가
+    if (epoxy && epoxy !== "no") {
+        params.append('epoxy', epoxy);
+    }
+    // 6. 증정본 (free_copies) - 기본값(40)이 아닌 경우만 추가
+    if (giftCopies && giftCopies !== String(GIFT_COPIES_BASE)) {
+        params.append('free_copies', giftCopies);
+    }
+
+    // 현재 페이지의 기본 URL에 쿼리 스트링을 붙입니다.
+    const baseUrl = window.location.origin + window.location.pathname;
+    return baseUrl + '?' + params.toString();
+}
+
+/**
+ * 조합된 URL을 클립보드에 복사하고 알림을 표시합니다.
+ */
+function copyCurrentUrl() {
+    const urlToCopy = getCurrentUrlParams();
+    
+    // 클립보드 복사 API 사용 (navigator.clipboard)
+    navigator.clipboard.writeText(urlToCopy).then(() => {
+        alert("계산기 URL이 클립보드에 복사되었습니다:\n" + urlToCopy);
+    }).catch(err => {
+        // 복사 실패 시 (예: http 환경 등)
+        console.error('URL 복사 실패:', err);
+        alert('URL 복사에 실패했습니다. 브라우저 설정(HTTPS)을 확인하거나, 콘솔을 참고하세요.');
+    });
+}
+
+
+/**
+ * URL 파라미터를 읽어 계산기를 초기화하고 계산을 실행합니다.
+ */
+function initFromUrlParams() {
+    const params = new URLSearchParams(window.location.search);
+    let shouldCalculate = false;
+
+    // 1. 원고 유형 (type) - 라디오 버튼 선택
+    const type = params.get('type');
+    if (type) {
+        const radio = document.querySelector(`input[name="manuscriptType"][value="${type}"]`);
+        if (radio) {
+            radio.checked = true;
+            // 라디오 클릭 이벤트 발생시켜 패키지 드롭다운 값도 함께 변경
+            radio.dispatchEvent(new Event('click')); 
+            shouldCalculate = true;
+        }
+    } else {
+        // type 파라미터가 없으면 package 파라미터라도 확인하여 패키지 설정
+        const packageValue = params.get('package');
+        if (packageValue) {
+            document.getElementById("package").value = packageValue;
+            shouldCalculate = true;
+        }
+    }
+    
+    // 2. 총 페이지 수 (total_pages)
+    const totalPages = params.get('total_pages');
+    if (totalPages) {
+        document.getElementById("totalPages").value = totalPages;
+        shouldCalculate = true;
+    }
+    
+    // 3. 컬러 페이지 수 (color_pages)
+    const colorPages = params.get('color_pages');
+    if (colorPages) {
+        document.getElementById("colorPages").value = colorPages;
+        shouldCalculate = true;
+    }
+    
+    // 4. 표지 에폭시 (epoxy)
+    const epoxy = params.get('epoxy');
+    if (epoxy && epoxy === 'yes') {
+        document.getElementById("epoxyOption").value = 'yes';
+        shouldCalculate = true;
+    }
+    
+    // 5. 증정본 (free_copies)
+    const freeCopies = params.get('free_copies');
+    if (freeCopies) {
+        document.getElementById("giftCopies").value = freeCopies;
+        shouldCalculate = true;
+    }
+
+    if (shouldCalculate) {
+        // 모든 입력값 설정 후 최종 계산 실행
+        calculate();
+    }
+}
+
+// 페이지 로드 시 URL 초기화 함수 실행
+window.onload = initFromUrlParams;
+
+</script>
+</body>
+</html>
+
+
+</body>
+</html>
