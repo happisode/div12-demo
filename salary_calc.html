@@ -54,8 +54,18 @@
         .copy-button:hover {
             color: #218838;
         }
-        .copy-button:active {
-            color: #1e7e34;
+        .reset-button { /* 초기화 버튼 스타일 */
+            background: none;
+            border: none;
+            cursor: pointer;
+            margin-left: 10px;
+            color: #dc3545; /* 빨간색으로 구분 */
+            font-size: 1.5em;
+            padding: 5px;
+            transition: color 0.2s;
+        }
+        .reset-button:hover {
+            color: #c82333;
         }
         label {
             display: block;
@@ -130,12 +140,15 @@
     <div class="header-section">
         <h1>💰 연봉 계산기</h1>
         <button class="copy-button" onclick="copyResults()">
-            <i class="fas fa-copy"></i>
+            <i class="fas fa-copy" title="계산 결과 복사"></i>
+        </button>
+        <button class="reset-button" onclick="resetCalculator()">
+            <i class="fas fa-eraser" title="초기화"></i>
         </button>
     </div>
 
     <label for="annualSalary">연봉액 (원):</label>
-    <input type="text" id="annualSalary" placeholder="예: 38,000,000" oninput="formatAndCalculate(this)">
+    <input type="text" id="annualSalary" oninput="formatAndCalculate(this)">
 
     <div class="result-box">
         <div class="result-item">
@@ -193,6 +206,18 @@
         inputElement.value = value.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
         calculateSalary();
     }
+    
+    // 초기화 함수
+    function resetCalculator() {
+        document.getElementById('annualSalary').value = '';
+        document.getElementById('monthlyPayResult').textContent = '0원';
+        document.getElementById('basePayResult').textContent = '0원';
+        document.getElementById('jobAllowanceResult').textContent = '0원';
+        document.getElementById('overtimePayResult').textContent = '0원';
+        document.getElementById('hourlyRateResult').textContent = '0원';
+        document.getElementById('detailsContent').innerHTML = '연봉을 입력하면 자세한 계산 내역이 표시됩니다.';
+        calculationResults = {};
+    }
 
     // 주 계산 함수
     function calculateSalary() {
@@ -207,14 +232,8 @@
         const detailsContent = document.getElementById('detailsContent');
 
         if (isNaN(annualSalary) || annualSalary <= 0) {
-            // 초기화
-            monthlyPayResult.textContent = '0원';
-            basePayResult.textContent = '0원';
-            jobAllowanceResult.textContent = '0원';
-            overtimePayResult.textContent = '0원';
-            hourlyRateResult.textContent = '0원';
-            detailsContent.innerHTML = '연봉을 입력하면 자세한 계산 내역이 표시됩니다.';
-            calculationResults = {};
+            // 입력이 없거나 무효하면 초기화
+            resetCalculator(); 
             return;
         }
 
@@ -226,7 +245,6 @@
         const TOTAL_RATE_FACTOR = HOURS_BASE + (HOURS_OVERTIME * OVERTIME_MULTIPLIER); // 242
 
         // --- 계산 시작 ---
-
         // 1. 월지급액 계산
         const monthlyPayUnrounded = annualSalary / 12;
         const monthlyPayRounded = Math.round(monthlyPayUnrounded);
@@ -245,10 +263,6 @@
         // 5. 연장수당 계산 (나머지 금액)
         const overtimePay = monthlyPayRounded - basePay - jobAllowance;
         
-        // R을 사용한 계산 값 (상세 내역 표시용)
-        const overtimePayUnrounded = fundamentalRate * (HOURS_OVERTIME * OVERTIME_MULTIPLIER);
-
-
         // --- 결과 표시 ---
         monthlyPayResult.textContent = formatNumber(monthlyPayRounded) + '원';
         basePayResult.textContent = formatNumber(basePay) + '원';
@@ -258,12 +272,15 @@
 
 
         // --- 계산 내역 생성 (HTML) ---
+        const formattedAnnualSalary = formatNumber(annualSalary);
+        const formattedTotalPay = formatNumber(basePay + jobAllowance + overtimePay);
+        
         const calculationDetailsHTML = `
             <h2>단계별 계산:</h2>
 
             <div class="detail-item"><strong>1. 월지급액 계산:</strong></div>
             <div class="detail-item detail-formula">월지급액 = 연봉 / 12</div>
-            <div class="detail-item detail-formula">${formatNumber(annualSalary)} / 12 = <strong>${formatNumber(monthlyPayRounded)}원</strong></div>
+            <div class="detail-item detail-formula">${formattedAnnualSalary} / 12 = <strong>${formatNumber(monthlyPayRounded)}원</strong></div>
 
             <div class="detail-item"><strong>2. 시급 계산:</strong></div>
             <div class="detail-item detail-formula">기본 시급 (R) = 월지급액 / 242 = <strong>${formatDecimal(fundamentalRate)}</strong></div>
@@ -281,7 +298,7 @@
             <br>
             <div class="detail-item"><strong>최종 확인 (월지급액 합산):</strong></div>
             <div class="detail-item detail-formula">기본급 + 직무수당 + 연장수당</div>
-            <div class="detail-item detail-formula">${formatNumber(basePay)} + ${formatNumber(jobAllowance)} + ${formatNumber(overtimePay)} = <strong>${formatNumber(basePay + jobAllowance + overtimePay)}원</strong></div>
+            <div class="detail-item detail-formula">${formatNumber(basePay)} + ${formatNumber(jobAllowance)} + ${formatNumber(overtimePay)} = <strong>${formattedTotalPay}원</strong></div>
             <div class="detail-item">(*이 합계는 **월지급액: ${formatNumber(monthlyPayRounded)}원**과 일치합니다.*)</div>
         `;
         detailsContent.innerHTML = calculationDetailsHTML;
@@ -295,7 +312,6 @@
             overtimePay: overtimePay,
             hourlyRateDisplayed: hourlyRateDisplayed,
             fundamentalRate: fundamentalRate,
-            detailsHTML: calculationDetailsHTML // 복사 로직에서 텍스트로 변환할 때 사용
         };
     }
 
@@ -340,11 +356,9 @@
             });
     }
 
-    // 초기값 설정 (예시 데이터: 38000000)
+    // 페이지 로드 시 초기화 상태로 시작
     document.addEventListener('DOMContentLoaded', () => {
-        const inputElement = document.getElementById('annualSalary');
-        inputElement.value = 38000000;
-        formatAndCalculate(inputElement);
+        resetCalculator();
     });
 </script>
 
