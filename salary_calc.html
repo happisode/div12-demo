@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+
+<style id="webmakerstyle">
+
+</style>
+</head>
+<body>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>연봉 계산기</title>
+    <style>
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            background-color: #f4f7f9;
+            padding: 20px;
+            color: #333;
+        }
+        .calculator-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .header-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        h1 {
+            color: #007bff;
+            text-align: center;
+            margin: 0;
+            font-size: 2em;
+        }
+        .copy-button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            margin-left: 10px;
+            color: #28a745;
+            font-size: 1.5em;
+            padding: 5px;
+            transition: color 0.2s;
+        }
+        .copy-button:hover {
+            color: #218838;
+        }
+        .copy-button:active {
+            color: #1e7e34;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 16px;
+            text-align: right;
+        }
+        .result-box {
+            border-top: 2px solid #007bff;
+            padding-top: 20px;
+        }
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px dashed #eee;
+            font-size: 18px;
+        }
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        .item-label {
+            font-weight: bold;
+            color: #555;
+        }
+        .item-value {
+            font-weight: bold;
+            color: #28a745;
+        }
+        .calculation-details {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #e9f7ff;
+            border: 1px solid #cce5ff;
+            border-radius: 5px;
+        }
+        .calculation-details h2 {
+            color: #0056b3;
+            font-size: 1.4em;
+            margin-top: 0;
+            border-bottom: 1px solid #cce5ff;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+        }
+        .detail-item {
+            margin-bottom: 7px;
+            font-size: 1.1em;
+            line-height: 1.5;
+        }
+        .detail-formula {
+            font-family: monospace;
+            background-color: #f0f0f0;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-size: 1.1em;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+
+<div class="calculator-container">
+    <div class="header-section">
+        <h1>💰 연봉 계산기</h1>
+        <button class="copy-button" onclick="copyResults()">
+            <i class="fas fa-copy"></i>
+        </button>
+    </div>
+
+    <label for="annualSalary">연봉액 (원):</label>
+    <input type="text" id="annualSalary" placeholder="예: 38,000,000" oninput="formatAndCalculate(this)">
+
+    <div class="result-box">
+        <div class="result-item">
+            <span class="item-label">월지급액</span>
+            <span class="item-value" id="monthlyPayResult">0원</span>
+        </div>
+        <div class="result-item">
+            <span class="item-label">기본급</span>
+            <span class="item-value" id="basePayResult">0원</span>
+        </div>
+        <div class="result-item">
+            <span class="item-label">직무수당 (고정)</span>
+            <span class="item-value" id="jobAllowanceResult">0원</span>
+        </div>
+        <div class="result-item">
+            <span class="item-label">연장수당</span>
+            <span class="item-value" id="overtimePayResult">0원</span>
+        </div>
+        <div class="result-item">
+            <span class="item-label">시급</span>
+            <span class="item-value" id="hourlyRateResult">0원</span>
+        </div>
+    </div>
+
+    <div class="calculation-details">
+        <h2>📊 계산 내역 (적용 공식)</h2>
+        <div id="detailsContent">연봉을 입력하면 자세한 계산 내역이 표시됩니다.</div>
+    </div>
+</div>
+
+<script>
+    // 전역 변수로 계산 결과 저장 (복사 함수에서 사용)
+    let calculationResults = {};
+
+    // 숫자 포맷팅 함수: 정수 반올림 후 콤마 추가
+    const formatNumber = (num) => {
+        if (typeof num !== 'number' || isNaN(num)) {
+            return '0';
+        }
+        const roundedNum = Math.round(num); 
+        return roundedNum.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    };
+
+    // Helper function: 소수점 4자리까지 표시
+    const formatDecimal = (num) => {
+        if (typeof num !== 'number' || isNaN(num)) {
+            return '0';
+        }
+        return num.toFixed(4).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    };
+
+    // 입력 필드 포맷 및 계산 호출
+    function formatAndCalculate(inputElement) {
+        let value = inputElement.value.replace(/[^0-9]/g, ''); 
+        inputElement.value = value.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        calculateSalary();
+    }
+
+    // 주 계산 함수
+    function calculateSalary() {
+        const annualSalaryInput = document.getElementById('annualSalary').value;
+        const annualSalary = parseFloat(annualSalaryInput.replace(/[^0-9]/g, '')); 
+
+        const monthlyPayResult = document.getElementById('monthlyPayResult');
+        const basePayResult = document.getElementById('basePayResult');
+        const jobAllowanceResult = document.getElementById('jobAllowanceResult');
+        const overtimePayResult = document.getElementById('overtimePayResult');
+        const hourlyRateResult = document.getElementById('hourlyRateResult');
+        const detailsContent = document.getElementById('detailsContent');
+
+        if (isNaN(annualSalary) || annualSalary <= 0) {
+            // 초기화
+            monthlyPayResult.textContent = '0원';
+            basePayResult.textContent = '0원';
+            jobAllowanceResult.textContent = '0원';
+            overtimePayResult.textContent = '0원';
+            hourlyRateResult.textContent = '0원';
+            detailsContent.innerHTML = '연봉을 입력하면 자세한 계산 내역이 표시됩니다.';
+            calculationResults = {};
+            return;
+        }
+
+        // --- 상수 정의 ---
+        const JOB_ALLOWANCE_FIXED = 100000;
+        const HOURS_BASE = 209;
+        const HOURS_OVERTIME = 22;
+        const OVERTIME_MULTIPLIER = 1.5;
+        const TOTAL_RATE_FACTOR = HOURS_BASE + (HOURS_OVERTIME * OVERTIME_MULTIPLIER); // 242
+
+        // --- 계산 시작 ---
+
+        // 1. 월지급액 계산
+        const monthlyPayUnrounded = annualSalary / 12;
+        const monthlyPayRounded = Math.round(monthlyPayUnrounded);
+
+        // 2. 시급 계산
+        const fundamentalRate = monthlyPayUnrounded / TOTAL_RATE_FACTOR;
+        const hourlyRateDisplayed = Math.round(fundamentalRate); 
+
+        // 3. 직무수당 (고정)
+        const jobAllowance = JOB_ALLOWANCE_FIXED;
+
+        // 4. 기본급 계산 (시급(표시) * 209 - 100000)
+        const basePayCalculated = (hourlyRateDisplayed * HOURS_BASE) - jobAllowance;
+        const basePay = Math.round(basePayCalculated); 
+
+        // 5. 연장수당 계산 (나머지 금액)
+        const overtimePay = monthlyPayRounded - basePay - jobAllowance;
+        
+        // R을 사용한 계산 값 (상세 내역 표시용)
+        const overtimePayUnrounded = fundamentalRate * (HOURS_OVERTIME * OVERTIME_MULTIPLIER);
+
+
+        // --- 결과 표시 ---
+        monthlyPayResult.textContent = formatNumber(monthlyPayRounded) + '원';
+        basePayResult.textContent = formatNumber(basePay) + '원';
+        jobAllowanceResult.textContent = formatNumber(jobAllowance) + '원';
+        overtimePayResult.textContent = formatNumber(overtimePay) + '원';
+        hourlyRateResult.textContent = formatNumber(hourlyRateDisplayed) + '원';
+
+
+        // --- 계산 내역 생성 (HTML) ---
+        const calculationDetailsHTML = `
+            <h2>단계별 계산:</h2>
+
+            <div class="detail-item"><strong>1. 월지급액 계산:</strong></div>
+            <div class="detail-item detail-formula">월지급액 = 연봉 / 12</div>
+            <div class="detail-item detail-formula">${formatNumber(annualSalary)} / 12 = <strong>${formatNumber(monthlyPayRounded)}원</strong></div>
+
+            <div class="detail-item"><strong>2. 시급 계산:</strong></div>
+            <div class="detail-item detail-formula">기본 시급 (R) = 월지급액 / 242 = <strong>${formatDecimal(fundamentalRate)}</strong></div>
+            <div class="detail-item detail-formula">시급 = R = <strong>${formatNumber(hourlyRateDisplayed)}원</strong></div>
+
+            <div class="detail-item"><strong>3. 기본급과 직무수당 계산:</strong></div>
+            <div class="detail-item detail-formula">기본급 = (시급 × 209시간) - 직무수당</div>
+            <div class="detail-item detail-formula">기본급 = (${formatNumber(hourlyRateDisplayed)} × 209) - ${formatNumber(jobAllowance)} = <strong>${formatNumber(basePay)}원</strong></div>
+            <div class="detail-item">직무수당은 <strong>${formatNumber(jobAllowance)}원</strong>입니다.</div>
+
+            <div class="detail-item"><strong>4. 연장수당 계산:</strong></div>
+            <div class="detail-item detail-formula">연장수당 = 월지급액 - 기본급 - 직무수당</div>
+            <div class="detail-item detail-formula">연장수당 = ${formatNumber(monthlyPayRounded)} - ${formatNumber(basePay)} - ${formatNumber(jobAllowance)} = <strong>${formatNumber(overtimePay)}원</strong></div>
+
+            <br>
+            <div class="detail-item"><strong>최종 확인 (월지급액 합산):</strong></div>
+            <div class="detail-item detail-formula">기본급 + 직무수당 + 연장수당</div>
+            <div class="detail-item detail-formula">${formatNumber(basePay)} + ${formatNumber(jobAllowance)} + ${formatNumber(overtimePay)} = <strong>${formatNumber(basePay + jobAllowance + overtimePay)}원</strong></div>
+            <div class="detail-item">(*이 합계는 **월지급액: ${formatNumber(monthlyPayRounded)}원**과 일치합니다.*)</div>
+        `;
+        detailsContent.innerHTML = calculationDetailsHTML;
+
+        // --- 복사 결과를 위한 전역 변수 업데이트 ---
+        calculationResults = {
+            annualSalary: annualSalary,
+            monthlyPayRounded: monthlyPayRounded,
+            basePay: basePay,
+            jobAllowance: jobAllowance,
+            overtimePay: overtimePay,
+            hourlyRateDisplayed: hourlyRateDisplayed,
+            fundamentalRate: fundamentalRate,
+            detailsHTML: calculationDetailsHTML // 복사 로직에서 텍스트로 변환할 때 사용
+        };
+    }
+
+    // 복사 기능 함수
+    function copyResults() {
+        if (!calculationResults.annualSalary) {
+            alert('연봉을 먼저 입력하고 계산해 주세요.');
+            return;
+        }
+
+        const formattedAnnualSalary = formatNumber(calculationResults.annualSalary);
+        const formattedTotalPay = formatNumber(calculationResults.basePay + calculationResults.jobAllowance + calculationResults.overtimePay);
+        
+        // 복사용 텍스트 구성
+        let copyText = `
+--- 💰 연봉 계산 결과 ---
+연봉액: ${formattedAnnualSalary}원
+
+[월별 항목]
+월지급액: ${formatNumber(calculationResults.monthlyPayRounded)}원
+기본급: ${formatNumber(calculationResults.basePay)}원
+직무수당: ${formatNumber(calculationResults.jobAllowance)}원
+연장수당: ${formatNumber(calculationResults.overtimePay)}원
+시급: ${formatNumber(calculationResults.hourlyRateDisplayed)}원
+총합 (확인): ${formattedTotalPay}원
+
+--- 📊 계산 내역 ---
+1. 월지급액: ${formattedAnnualSalary}원 / 12 = ${formatNumber(calculationResults.monthlyPayRounded)}원
+2. 기본 시급 (R): ${formatNumber(calculationResults.monthlyPayRounded)} / 242 = ${formatDecimal(calculationResults.fundamentalRate)}
+3. 시급: ${formatNumber(calculationResults.hourlyRateDisplayed)}원
+4. 기본급: (${formatNumber(calculationResults.hourlyRateDisplayed)} × 209) - 100,000 = ${formatNumber(calculationResults.basePay)}원
+5. 연장수당: ${formatNumber(calculationResults.monthlyPayRounded)} - ${formatNumber(calculationResults.basePay)} - 100,000 = ${formatNumber(calculationResults.overtimePay)}원
+`;
+
+        navigator.clipboard.writeText(copyText.trim())
+            .then(() => {
+                alert('계산 결과 및 내역이 클립보드에 복사되었습니다.');
+            })
+            .catch(err => {
+                console.error('클립보드 복사 실패:', err);
+                alert('클립보드 복사에 실패했습니다. 브라우저 설정을 확인해 주세요.');
+            });
+    }
+
+    // 초기값 설정 (예시 데이터: 38000000)
+    document.addEventListener('DOMContentLoaded', () => {
+        const inputElement = document.getElementById('annualSalary');
+        inputElement.value = 38000000;
+        formatAndCalculate(inputElement);
+    });
+</script>
+
+</body>
+</html>
+
+
+</body>
+</html>
